@@ -1,13 +1,18 @@
-
 # ============================================================
 # SIXONE SETTINGV1
-# MAX PERFORMANCE GAMING OPTIMIZER
+# PERMANENT MAX GAMING OPTIMIZER
+# PREMIUM DARK / NEON PURPLE UI
 # ============================================================
 
 Set-ExecutionPolicy Unrestricted -Scope Process -Force
 
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
 # ============================================================
-# ADMINISTRATOR
+# ADMIN
 # ============================================================
 
 $CurrentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -21,32 +26,21 @@ if (-not $IsAdmin) {
 
     try {
 
-        $PowerShellPath = (Get-Command powershell.exe).Source
+        $Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
 
-        $Arguments = @(
-            "-NoProfile"
-            "-ExecutionPolicy"
-            "Bypass"
-            "-File"
-            "`"$PSCommandPath`""
-        )
-
-        Start-Process `
-            -FilePath $PowerShellPath `
-            -ArgumentList $Arguments `
-            -Verb RunAs
+        Start-Process powershell.exe `
+            -Verb RunAs `
+            -ArgumentList $Arguments
 
         exit
     }
     catch {
 
-        Add-Type -AssemblyName System.Windows.Forms
-
         [System.Windows.Forms.MessageBox]::Show(
-            "SIXONE ต้องการสิทธิ์ Administrator",
-            "SIXONE MAX",
+            "SIXONE SETTINGV1 requires Administrator permission.",
+            "SIXONE SETTINGV1",
             [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
+            [System.Windows.Forms.MessageBoxIcon]::Error
         )
 
         exit
@@ -54,437 +48,120 @@ if (-not $IsAdmin) {
 }
 
 # ============================================================
-# ASSEMBLIES
+# GLOBAL
 # ============================================================
 
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+$script:OptimizationRunning = $false
 
-[System.Windows.Forms.Application]::EnableVisualStyles()
+$script:StartProcessCount = 0
+$script:EndProcessCount = 0
+
+$script:StartMemoryMB = 0
+$script:EndMemoryMB = 0
+
+$script:CompletedCount = 0
+$script:TotalSteps = 16
 
 # ============================================================
 # COLORS
 # ============================================================
 
-$BG_MAIN = [System.Drawing.Color]::FromArgb(8, 7, 13)
-$BG_CARD = [System.Drawing.Color]::FromArgb(17, 14, 26)
-$BG_CONSOLE = [System.Drawing.Color]::FromArgb(10, 9, 16)
+$BG_MAIN      = [System.Drawing.Color]::FromArgb(7,6,12)
+$BG_CARD      = [System.Drawing.Color]::FromArgb(15,12,23)
+$BG_CARD2     = [System.Drawing.Color]::FromArgb(20,16,30)
+$BG_CONSOLE   = [System.Drawing.Color]::FromArgb(8,7,13)
 
-$PURPLE = [System.Drawing.Color]::FromArgb(168, 85, 247)
-$PURPLE_DARK = [System.Drawing.Color]::FromArgb(126, 34, 206)
+$PURPLE       = [System.Drawing.Color]::FromArgb(168,85,247)
+$PURPLE_DARK  = [System.Drawing.Color]::FromArgb(126,34,206)
+$PURPLE_LIGHT = [System.Drawing.Color]::FromArgb(192,132,252)
 
-$GREEN = [System.Drawing.Color]::FromArgb(34, 197, 94)
-$RED = [System.Drawing.Color]::FromArgb(239, 68, 68)
+$GREEN        = [System.Drawing.Color]::FromArgb(34,197,94)
+$RED          = [System.Drawing.Color]::FromArgb(239,68,68)
+$YELLOW       = [System.Drawing.Color]::FromArgb(250,204,21)
 
-$WHITE = [System.Drawing.Color]::FromArgb(243, 244, 246)
-$MUTED = [System.Drawing.Color]::FromArgb(156, 163, 175)
-
-# ============================================================
-# FORM
-# ============================================================
-
-$form = New-Object System.Windows.Forms.Form
-
-$form.Text = "SIXONE SETTINGV1 // MAX PERFORMANCE"
-
-$form.Size = New-Object System.Drawing.Size(
-    1050,
-    680
-)
-
-$form.StartPosition = "CenterScreen"
-$form.FormBorderStyle = "FixedSingle"
-
-$form.MaximizeBox = $false
-$form.BackColor = $BG_MAIN
-$form.ForeColor = $WHITE
+$WHITE        = [System.Drawing.Color]::White
+$TEXT         = [System.Drawing.Color]::FromArgb(230,225,240)
+$MUTED        = [System.Drawing.Color]::FromArgb(145,138,160)
+$BORDER       = [System.Drawing.Color]::FromArgb(52,43,66)
 
 # ============================================================
-# HEADER
+# WRITE LOG
 # ============================================================
 
-$lblTitle = New-Object System.Windows.Forms.Label
-
-$lblTitle.Text = "SIXONE"
-
-$lblTitle.Font = New-Object System.Drawing.Font(
-    "Segoe UI",
-    21,
-    [System.Drawing.FontStyle]::Bold
-)
-
-$lblTitle.ForeColor = $PURPLE
-
-$lblTitle.Location = New-Object System.Drawing.Point(
-    22,
-    15
-)
-
-$lblTitle.AutoSize = $true
-
-$form.Controls.Add($lblTitle)
-
-$lblSubtitle = New-Object System.Windows.Forms.Label
-
-$lblSubtitle.Text = "MAX PERFORMANCE // CPU + FPS OPTIMIZER"
-
-$lblSubtitle.Font = New-Object System.Drawing.Font(
-    "Segoe UI",
-    9
-)
-
-$lblSubtitle.ForeColor = $MUTED
-
-$lblSubtitle.Location = New-Object System.Drawing.Point(
-    25,
-    53
-)
-
-$lblSubtitle.AutoSize = $true
-
-$form.Controls.Add($lblSubtitle)
-
-# ============================================================
-# LEFT STATUS PANEL
-# ============================================================
-
-$pnlStatus = New-Object System.Windows.Forms.Panel
-
-$pnlStatus.Location = New-Object System.Drawing.Point(
-    20,
-    85
-)
-
-$pnlStatus.Size = New-Object System.Drawing.Size(
-    330,
-    485
-)
-
-$pnlStatus.BackColor = $BG_CARD
-
-$form.Controls.Add($pnlStatus)
-
-$lblStatusHeader = New-Object System.Windows.Forms.Label
-
-$lblStatusHeader.Text = "OPTIMIZATION STATUS"
-
-$lblStatusHeader.Font = New-Object System.Drawing.Font(
-    "Segoe UI",
-    11,
-    [System.Drawing.FontStyle]::Bold
-)
-
-$lblStatusHeader.ForeColor = $PURPLE
-
-$lblStatusHeader.Location = New-Object System.Drawing.Point(
-    18,
-    15
-)
-
-$lblStatusHeader.AutoSize = $true
-
-$pnlStatus.Controls.Add($lblStatusHeader)
-
-# ============================================================
-# STATUS ITEMS
-# ============================================================
-
-$StatusLabels = @{}
-
-function Add-StatusItem {
+function Write-Log {
 
     param(
-        [string]$Key,
-        [string]$Text,
-        [int]$Y
+        [string]$Message,
+        [ValidateSet("INFO","OK","WARN","ERROR")]
+        [string]$Type = "INFO"
     )
 
-    $label = New-Object System.Windows.Forms.Label
-
-    $label.Text = "○  $Text"
-
-    $label.Font = New-Object System.Drawing.Font(
-        "Segoe UI",
-        8.5
-    )
-
-    $label.ForeColor = $MUTED
-
-    $label.Location = New-Object System.Drawing.Point(
-        18,
-        $Y
-    )
-
-    $label.Size = New-Object System.Drawing.Size(
-        295,
-        26
-    )
-
-    $pnlStatus.Controls.Add($label)
-
-    $StatusLabels[$Key] = $label
-}
-
-Add-StatusItem "GameMode"     "Game Mode"                       52
-Add-StatusItem "GPU"          "Hardware GPU Scheduling"        78
-Add-StatusItem "Power"        "High Performance Power"         104
-Add-StatusItem "Visual"       "Visual Effects Reduced"         130
-Add-StatusItem "Background"   "Background Apps Reduced"        156
-Add-StatusItem "Capture"      "Game DVR Disabled"              182
-Add-StatusItem "Startup"      "Startup Apps Reduced"            208
-Add-StatusItem "Input"        "Mouse / Keyboard Optimized"      234
-Add-StatusItem "Network"      "Network Tweaks"                  260
-Add-StatusItem "MMCSS"        "Game Process Priority"            286
-Add-StatusItem "Temp"         "Temporary Files Cleaned"         312
-Add-StatusItem "Shader"       "Shader Cache Cleaned"            338
-Add-StatusItem "Explorer"     "Explorer Effects Reduced"        364
-Add-StatusItem "Tasks"        "Background Tasks Reduced"        390
-Add-StatusItem "CPU"          "CPU Process Cleanup"              416
-Add-StatusItem "Memory"       "Memory Working Set Cleanup"       442
-
-# ============================================================
-# STATUS UPDATE
-# ============================================================
-
-function Set-Status {
-
-    param(
-        [string]$Key,
-        [bool]$Success
-    )
-
-    if (-not $StatusLabels.ContainsKey($Key)) {
+    if ($null -eq $script:LogBox) {
         return
     }
 
-    $text =
-        $StatusLabels[$Key].Text -replace "^[○✓]\s+", ""
+    try {
 
-    if ($Success) {
+        $Time = Get-Date -Format "HH:mm:ss"
 
-        $StatusLabels[$Key].Text =
-            "✓  $text"
+        switch ($Type) {
 
-        $StatusLabels[$Key].ForeColor = $GREEN
+            "OK" {
+                $Prefix = "[OK]"
+                $Color = $GREEN
+            }
+
+            "WARN" {
+                $Prefix = "[WARN]"
+                $Color = $YELLOW
+            }
+
+            "ERROR" {
+                $Prefix = "[ERROR]"
+                $Color = $RED
+            }
+
+            default {
+                $Prefix = "[INFO]"
+                $Color = $TEXT
+            }
+        }
+
+        $script:LogBox.SelectionStart =
+            $script:LogBox.TextLength
+
+        $script:LogBox.SelectionLength = 0
+
+        $script:LogBox.SelectionColor = $MUTED
+
+        $script:LogBox.AppendText(
+            "[$Time] "
+        )
+
+        $script:LogBox.SelectionColor = $Color
+
+        $script:LogBox.AppendText(
+            "$Prefix "
+        )
+
+        $script:LogBox.SelectionColor = $TEXT
+
+        $script:LogBox.AppendText(
+            "$Message`r`n"
+        )
+
+        $script:LogBox.SelectionStart =
+            $script:LogBox.TextLength
+
+        $script:LogBox.ScrollToCaret()
+
+        [System.Windows.Forms.Application]::DoEvents()
     }
-    else {
-
-        $StatusLabels[$Key].Text =
-            "○  $text"
-
-        $StatusLabels[$Key].ForeColor = $MUTED
-    }
-
-    [System.Windows.Forms.Application]::DoEvents()
+    catch {}
 }
 
 # ============================================================
-# LOG PANEL
-# ============================================================
-
-$pnlLogs = New-Object System.Windows.Forms.Panel
-
-$pnlLogs.Location = New-Object System.Drawing.Point(
-    370,
-    85
-)
-
-$pnlLogs.Size = New-Object System.Drawing.Size(
-    655,
-    485
-)
-
-$pnlLogs.BackColor = $BG_CONSOLE
-
-$form.Controls.Add($pnlLogs)
-
-$lblLogHeader = New-Object System.Windows.Forms.Label
-
-$lblLogHeader.Text = "MAX OPTIMIZATION CONSOLE"
-
-$lblLogHeader.Font = New-Object System.Drawing.Font(
-    "Segoe UI",
-    10,
-    [System.Drawing.FontStyle]::Bold
-)
-
-$lblLogHeader.ForeColor = $PURPLE
-
-$lblLogHeader.Location = New-Object System.Drawing.Point(
-    15,
-    12
-)
-
-$lblLogHeader.AutoSize = $true
-
-$pnlLogs.Controls.Add($lblLogHeader)
-
-$txtLogs = New-Object System.Windows.Forms.TextBox
-
-$txtLogs.Location = New-Object System.Drawing.Point(
-    15,
-    42
-)
-
-$txtLogs.Size = New-Object System.Drawing.Size(
-    625,
-    425
-)
-
-$txtLogs.Multiline = $true
-$txtLogs.ReadOnly = $true
-$txtLogs.ScrollBars = "Vertical"
-
-$txtLogs.BackColor = $BG_CONSOLE
-
-$txtLogs.ForeColor =
-    [System.Drawing.Color]::FromArgb(
-        216,
-        180,
-        254
-    )
-
-$txtLogs.BorderStyle = "None"
-
-$txtLogs.Font = New-Object System.Drawing.Font(
-    "Consolas",
-    9
-)
-
-$pnlLogs.Controls.Add($txtLogs)
-
-# ============================================================
-# BOTTOM PANEL
-# ============================================================
-
-$pnlBottom = New-Object System.Windows.Forms.Panel
-
-$pnlBottom.Location = New-Object System.Drawing.Point(
-    20,
-    585
-)
-
-$pnlBottom.Size = New-Object System.Drawing.Size(
-    1005,
-    55
-)
-
-$pnlBottom.BackColor = $BG_CARD
-
-$form.Controls.Add($pnlBottom)
-
-# ============================================================
-# STATUS
-# ============================================================
-
-$lblStatus = New-Object System.Windows.Forms.Label
-
-$lblStatus.Text = "READY FOR MAX PERFORMANCE"
-
-$lblStatus.Font = New-Object System.Drawing.Font(
-    "Segoe UI",
-    9,
-    [System.Drawing.FontStyle]::Bold
-)
-
-$lblStatus.ForeColor = $WHITE
-
-$lblStatus.Location = New-Object System.Drawing.Point(
-    15,
-    16
-)
-
-$lblStatus.Size = New-Object System.Drawing.Size(
-    370,
-    25
-)
-
-$pnlBottom.Controls.Add($lblStatus)
-
-# ============================================================
-# PROGRESS
-# ============================================================
-
-$progress = New-Object System.Windows.Forms.ProgressBar
-
-$progress.Location = New-Object System.Drawing.Point(
-    390,
-    20
-)
-
-$progress.Size = New-Object System.Drawing.Size(
-    300,
-    18
-)
-
-$progress.Minimum = 0
-$progress.Maximum = 100
-
-$pnlBottom.Controls.Add($progress)
-
-# ============================================================
-# MAX BUTTON
-# ============================================================
-
-$btnOptimize = New-Object System.Windows.Forms.Button
-
-$btnOptimize.Text = "⚡  MAX OPTIMIZE"
-
-$btnOptimize.Location = New-Object System.Drawing.Point(
-    710,
-    8
-)
-
-$btnOptimize.Size = New-Object System.Drawing.Size(
-    280,
-    40
-)
-
-$btnOptimize.Font = New-Object System.Drawing.Font(
-    "Segoe UI",
-    10,
-    [System.Drawing.FontStyle]::Bold
-)
-
-$btnOptimize.BackColor = $PURPLE_DARK
-$btnOptimize.ForeColor = $WHITE
-
-$btnOptimize.FlatStyle = "Flat"
-
-$btnOptimize.FlatAppearance.BorderSize = 1
-$btnOptimize.FlatAppearance.BorderColor = $PURPLE
-
-$btnOptimize.Cursor =
-    [System.Windows.Forms.Cursors]::Hand
-
-$pnlBottom.Controls.Add($btnOptimize)
-
-# ============================================================
-# LOG
-# ============================================================
-
-function Append-Log {
-
-    param(
-        [string]$Text
-    )
-
-    $time = Get-Date -Format "HH:mm:ss"
-
-    $txtLogs.AppendText(
-        "[$time] > $Text`r`n"
-    )
-
-    $txtLogs.SelectionStart =
-        $txtLogs.Text.Length
-
-    $txtLogs.ScrollToCaret()
-
-    [System.Windows.Forms.Application]::DoEvents()
-}
-
-# ============================================================
-# REGISTRY HELPERS
+# REGISTRY DWORD
 # ============================================================
 
 function Set-RegDWORD {
@@ -501,27 +178,35 @@ function Set-RegDWORD {
 
             New-Item `
                 -Path $Path `
-                -Force |
+                -Force `
+                -ErrorAction Stop |
                 Out-Null
         }
 
-        Set-ItemProperty `
+        New-ItemProperty `
             -Path $Path `
             -Name $Name `
+            -PropertyType DWord `
             -Value $Value `
-            -Type DWord `
             -Force `
-            -ErrorAction Stop
+            -ErrorAction Stop |
+            Out-Null
 
         return $true
     }
     catch {
 
-        Append-Log "[WARN] Registry: $Name"
+        Write-Log `
+            "$Name : $($_.Exception.Message)" `
+            "ERROR"
 
         return $false
     }
 }
+
+# ============================================================
+# REGISTRY STRING
+# ============================================================
 
 function Set-RegString {
 
@@ -537,424 +222,701 @@ function Set-RegString {
 
             New-Item `
                 -Path $Path `
-                -Force |
+                -Force `
+                -ErrorAction Stop |
                 Out-Null
         }
 
-        Set-ItemProperty `
+        New-ItemProperty `
             -Path $Path `
             -Name $Name `
+            -PropertyType String `
             -Value $Value `
-            -Type String `
             -Force `
-            -ErrorAction Stop
+            -ErrorAction Stop |
+            Out-Null
 
         return $true
     }
     catch {
+
+        Write-Log `
+            "$Name : $($_.Exception.Message)" `
+            "ERROR"
 
         return $false
     }
 }
 
 # ============================================================
-# 1. GAME MODE
+# PROCESS COUNT
+# ============================================================
+
+function Get-ProcessCountSafe {
+
+    try {
+
+        return @(
+            Get-Process -ErrorAction SilentlyContinue
+        ).Count
+    }
+    catch {
+
+        return 0
+    }
+}
+
+# ============================================================
+# MEMORY
+# ============================================================
+
+function Get-MemoryInfo {
+
+    try {
+
+        $OS = Get-CimInstance `
+            Win32_OperatingSystem `
+            -ErrorAction Stop
+
+        $Total = [math]::Round(
+            $OS.TotalVisibleMemorySize / 1MB,
+            0
+        )
+
+        $Free = [math]::Round(
+            $OS.FreePhysicalMemory / 1MB,
+            0
+        )
+
+        $Used = $Total - $Free
+
+        return @{
+            Total = $Total
+            Free  = $Free
+            Used  = $Used
+        }
+    }
+    catch {
+
+        return @{
+            Total = 0
+            Free  = 0
+            Used  = 0
+        }
+    }
+}
+
+# ============================================================
+# STATUS
+# ============================================================
+
+function Set-Status {
+
+    param(
+        [int]$Index,
+        [string]$Text,
+        [ValidateSet("WAIT","RUN","OK","ERROR")]
+        [string]$State = "WAIT"
+    )
+
+    if ($null -eq $script:StatusLabels) {
+        return
+    }
+
+    if (
+        $Index -lt 0 -or
+        $Index -ge $script:StatusLabels.Count
+    ) {
+        return
+    }
+
+    try {
+
+        $Label = $script:StatusLabels[$Index]
+
+        switch ($State) {
+
+            "RUN" {
+
+                $Label.Text = "●  $Text"
+                $Label.ForeColor = $PURPLE_LIGHT
+            }
+
+            "OK" {
+
+                $Label.Text = "✓  $Text"
+                $Label.ForeColor = $GREEN
+            }
+
+            "ERROR" {
+
+                $Label.Text = "×  $Text"
+                $Label.ForeColor = $RED
+            }
+
+            default {
+
+                $Label.Text = "○  $Text"
+                $Label.ForeColor = $MUTED
+            }
+        }
+
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    catch {}
+}
+
+# ============================================================
+# PROGRESS
+# ============================================================
+
+function Update-Progress {
+
+    param(
+        [string]$StepName
+    )
+
+    try {
+
+        $script:CompletedCount++
+
+        if (
+            $script:CompletedCount -gt
+            $script:TotalSteps
+        ) {
+            $script:CompletedCount =
+                $script:TotalSteps
+        }
+
+        $Percent = [math]::Round(
+            (
+                $script:CompletedCount /
+                $script:TotalSteps
+            ) * 100
+        )
+
+        if ($Percent -lt 0) {
+            $Percent = 0
+        }
+
+        if ($Percent -gt 100) {
+            $Percent = 100
+        }
+
+        $script:ProgressBar.Value = $Percent
+        $script:ProgressText.Text = "$Percent%"
+
+        Write-Log "$StepName completed." "OK"
+
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+    catch {}
+}
+
+# ============================================================
+# 01 GAME MODE
 # ============================================================
 
 function Optimize-GameMode {
 
-    $path =
-        "HKCU:\Software\Microsoft\GameBar"
+    try {
 
-    $a = Set-RegDWORD `
-        $path `
-        "AllowAutoGameMode" `
-        1
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\GameBar" `
+            "AllowAutoGameMode" `
+            1
 
-    $b = Set-RegDWORD `
-        $path `
-        "AutoGameModeEnabled" `
-        1
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\GameBar" `
+            "AutoGameModeEnabled" `
+            1
 
-    return ($a -and $b)
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\GameBar" `
+            "UseNexusForGameBarEnabled" `
+            0
+
+        Set-RegDWORD `
+            "HKCU:\System\GameConfigStore" `
+            "GameDVR_Enabled" `
+            0
+
+        Write-Log `
+            "Windows Game Mode configured." `
+            "OK"
+    }
+    catch {
+
+        Write-Log `
+            "Game Mode: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 2. GPU SCHEDULING
+# 02 GPU
 # ============================================================
 
 function Optimize-GPU {
 
-    $path =
-        "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"
+    try {
 
-    return Set-RegDWORD `
-        $path `
-        "HwSchMode" `
-        2
+        Set-RegDWORD `
+            "HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" `
+            "HwSchMode" `
+            2
+
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR" `
+            "AppCaptureEnabled" `
+            0
+
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR" `
+            "AudioCaptureEnabled" `
+            0
+
+        Write-Log `
+            "GPU scheduling configuration applied." `
+            "OK"
+
+        Write-Log `
+            "HAGS may require restart." `
+            "WARN"
+    }
+    catch {
+
+        Write-Log `
+            "GPU: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 3. POWER
+# 03 POWER
 # ============================================================
 
 function Optimize-Power {
 
     try {
 
-        powercfg /SETACTIVE SCHEME_MIN 2>$null
+        powercfg /setactive SCHEME_MIN 2>&1 |
+            Out-Null
 
         if ($LASTEXITCODE -eq 0) {
-            return $true
+
+            Write-Log `
+                "High Performance power plan activated." `
+                "OK"
         }
+        else {
 
-        $guid = (powercfg -getactivescheme |
-            Select-String `
-                -Pattern "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-        ).Matches.Value
-
-        if ($guid) {
-
-            powercfg /S $guid | Out-Null
-            return $true
+            Write-Log `
+                "Power plan command returned an error." `
+                "WARN"
         }
-
-        return $false
     }
     catch {
 
-        return $false
+        Write-Log `
+            "Power: $($_.Exception.Message)" `
+            "ERROR"
     }
 }
 
 # ============================================================
-# 4. VISUAL EFFECTS
+# 04 VISUAL
 # ============================================================
 
 function Optimize-VisualEffects {
 
-    $ok = $true
+    try {
 
-    $path =
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" `
+            "VisualFXSetting" `
+            2
 
-    if (-not (Set-RegDWORD `
-        $path `
-        "VisualFXSetting" `
-        2)) {
-
-        $ok = $false
+        Write-Log `
+            "Visual effects reduced." `
+            "OK"
     }
+    catch {
 
-    $desktop =
-        "HKCU:\Control Panel\Desktop"
-
-    Set-RegString `
-        $desktop `
-        "MenuShowDelay" `
-        "0" | Out-Null
-
-    Set-RegString `
-        $desktop `
-        "DragFullWindows" `
-        "0" | Out-Null
-
-    return $ok
+        Write-Log `
+            "Visual Effects: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 5. BACKGROUND APPS
+# 05 BACKGROUND APPS
 # ============================================================
 
 function Optimize-BackgroundApps {
 
-    $path =
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+    try {
 
-    return Set-RegDWORD `
-        $path `
-        "GlobalUserDisabled" `
-        1
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" `
+            "GlobalUserDisabled" `
+            1
+
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" `
+            "BackgroundAppGlobalToggle" `
+            0
+
+        Write-Log `
+            "Background application activity reduced." `
+            "OK"
+    }
+    catch {
+
+        Write-Log `
+            "Background Apps: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 6. GAME DVR
+# 06 CAPTURE
 # ============================================================
 
 function Optimize-Capture {
 
-    $ok = $true
+    try {
 
-    $gameDVR =
-        "HKCU:\System\GameConfigStore"
+        Set-RegDWORD `
+            "HKCU:\System\GameConfigStore" `
+            "GameDVR_FSEBehaviorMode" `
+            2
 
-    $gameBar =
-        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR"
+        Set-RegDWORD `
+            "HKCU:\System\GameConfigStore" `
+            "GameDVR_HonorUserFSEBehaviorMode" `
+            1
 
-    if (-not (Set-RegDWORD `
-        $gameDVR `
-        "GameDVR_Enabled" `
-        0)) {
+        Set-RegDWORD `
+            "HKCU:\System\GameConfigStore" `
+            "GameDVR_DXGIHonorFSEWindowsCompatible" `
+            1
 
-        $ok = $false
+        Write-Log `
+            "Game capture overhead reduced." `
+            "OK"
     }
+    catch {
 
-    if (-not (Set-RegDWORD `
-        $gameDVR `
-        "AppCaptureEnabled" `
-        0)) {
-
-        $ok = $false
+        Write-Log `
+            "Capture: $($_.Exception.Message)" `
+            "ERROR"
     }
-
-    Set-RegDWORD `
-        $gameBar `
-        "AppCaptureEnabled" `
-        0 | Out-Null
-
-    Set-RegDWORD `
-        $gameBar `
-        "HistoricalCaptureEnabled" `
-        0 | Out-Null
-
-    return $ok
 }
 
 # ============================================================
-# 7. STARTUP
+# 07 STARTUP
 # ============================================================
 
 function Optimize-Startup {
 
-    $path =
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+    try {
 
-    $targets = @(
-        "OneDrive",
-        "MicrosoftEdgeAutoLaunch",
-        "Teams",
-        "com.squirrel.Teams.Teams"
-    )
+        $RunPaths = @(
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+        )
 
-    foreach ($target in $targets) {
+        $Names = @(
+            "OneDrive",
+            "Teams",
+            "com.squirrel.Teams.Teams",
+            "Microsoft Teams",
+            "Spotify"
+        )
 
-        try {
+        foreach ($Path in $RunPaths) {
 
-            Remove-ItemProperty `
-                -Path $path `
-                -Name $target `
-                -ErrorAction SilentlyContinue
+            if (-not (Test-Path $Path)) {
+                continue
+            }
+
+            foreach ($Name in $Names) {
+
+                try {
+
+                    $Property = Get-ItemProperty `
+                        -Path $Path `
+                        -Name $Name `
+                        -ErrorAction SilentlyContinue
+
+                    if ($null -ne $Property) {
+
+                        Remove-ItemProperty `
+                            -Path $Path `
+                            -Name $Name `
+                            -Force `
+                            -ErrorAction SilentlyContinue
+
+                        Write-Log `
+                            "Startup disabled: $Name" `
+                            "OK"
+                    }
+                }
+                catch {}
+            }
         }
-        catch {
-        }
+
+        Write-Log `
+            "Startup load reduced." `
+            "OK"
     }
+    catch {
 
-    return $true
+        Write-Log `
+            "Startup: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 8. INPUT
+# 08 INPUT
 # ============================================================
 
 function Optimize-Input {
 
-    $mouse =
-        "HKCU:\Control Panel\Mouse"
+    try {
 
-    $keyboard =
-        "HKCU:\Control Panel\Keyboard"
+        # ----------------------------------------------------
+        # MOUSE
+        # ----------------------------------------------------
 
-    $ok = $true
+        Set-RegDWORD `
+            "HKCU:\Control Panel\Mouse" `
+            "MouseSpeed" `
+            0
 
-    if (-not (Set-RegString `
-        $mouse `
-        "MouseSpeed" `
-        "0")) {
+        Set-RegDWORD `
+            "HKCU:\Control Panel\Mouse" `
+            "MouseThreshold1" `
+            0
 
-        $ok = $false
+        Set-RegDWORD `
+            "HKCU:\Control Panel\Mouse" `
+            "MouseThreshold2" `
+            0
+
+        # ----------------------------------------------------
+        # KEYBOARD
+        # ----------------------------------------------------
+
+        Set-RegDWORD `
+            "HKCU:\Control Panel\Keyboard" `
+            "KeyboardDelay" `
+            0
+
+        Set-RegDWORD `
+            "HKCU:\Control Panel\Keyboard" `
+            "KeyboardSpeed" `
+            31
+
+        # ----------------------------------------------------
+        # MOUSE DRIVER QUEUE
+        # ----------------------------------------------------
+
+        $MousePath =
+            "HKLM:\SYSTEM\CurrentControlSet\Services\mouclass\Parameters"
+
+        if (-not (Test-Path $MousePath)) {
+
+            New-Item `
+                -Path $MousePath `
+                -Force `
+                -ErrorAction Stop |
+                Out-Null
+        }
+
+        New-ItemProperty `
+            -Path $MousePath `
+            -Name "MouseDataQueueSize" `
+            -PropertyType DWord `
+            -Value 36 `
+            -Force `
+            -ErrorAction Stop |
+            Out-Null
+
+        # ----------------------------------------------------
+        # KEYBOARD DRIVER QUEUE
+        # ----------------------------------------------------
+
+        $KeyboardPath =
+            "HKLM:\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters"
+
+        if (-not (Test-Path $KeyboardPath)) {
+
+            New-Item `
+                -Path $KeyboardPath `
+                -Force `
+                -ErrorAction Stop |
+                Out-Null
+        }
+
+        New-ItemProperty `
+            -Path $KeyboardPath `
+            -Name "KeyboardDataQueueSize" `
+            -PropertyType DWord `
+            -Value 36 `
+            -Force `
+            -ErrorAction Stop |
+            Out-Null
+
+        Write-Log `
+            "Mouse acceleration disabled." `
+            "OK"
+
+        Write-Log `
+            "Keyboard response configured." `
+            "OK"
+
+        Write-Log `
+            "MouseDataQueueSize = 36" `
+            "OK"
+
+        Write-Log `
+            "KeyboardDataQueueSize = 36" `
+            "OK"
+
+        Write-Log `
+            "Restart required for driver queue changes." `
+            "WARN"
     }
+    catch {
 
-    Set-RegString `
-        $mouse `
-        "MouseThreshold1" `
-        "0" | Out-Null
-
-    Set-RegString `
-        $mouse `
-        "MouseThreshold2" `
-        "0" | Out-Null
-
-    Set-RegString `
-        $keyboard `
-        "KeyboardDelay" `
-        "0" | Out-Null
-
-    Set-RegString `
-        $keyboard `
-        "KeyboardSpeed" `
-        "31" | Out-Null
-
-    return $ok
+        Write-Log `
+            "Input: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 9. NETWORK
+# 09 NETWORK
 # ============================================================
 
 function Optimize-Network {
 
-    $profile =
-        "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
-
-    $ok = $true
-
-    if (-not (Set-RegDWORD `
-        $profile `
-        "SystemResponsiveness" `
-        0)) {
-
-        $ok = $false
-    }
-
     try {
 
-        Set-ItemProperty `
-            -Path $profile `
-            -Name "NetworkThrottlingIndex" `
-            -Value ([uint32]0xFFFFFFFF) `
-            -Type DWord `
-            -Force `
-            -ErrorAction Stop
-    }
-    catch {
+        $Path =
+            "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
 
-        $ok = $false
-    }
+        if (-not (Test-Path $Path)) {
 
-    try {
-
-        $interfaces =
-            Get-ChildItem `
-                "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" `
-                -ErrorAction Stop
-
-        foreach ($interface in $interfaces) {
-
-            Set-RegDWORD `
-                $interface.PSPath `
-                "TcpAckFrequency" `
-                1 | Out-Null
-
-            Set-RegDWORD `
-                $interface.PSPath `
-                "TCPNoDelay" `
-                1 | Out-Null
+            New-Item `
+                -Path $Path `
+                -Force |
+                Out-Null
         }
+
+        New-ItemProperty `
+            -Path $Path `
+            -Name "NetworkThrottlingIndex" `
+            -PropertyType DWord `
+            -Value ([uint32]0xFFFFFFFF) `
+            -Force `
+            -ErrorAction SilentlyContinue |
+            Out-Null
+
+        Set-RegDWORD `
+            $Path `
+            "SystemResponsiveness" `
+            0
+
+        Write-Log `
+            "Network multimedia scheduling configured." `
+            "OK"
     }
     catch {
-    }
 
-    return $ok
+        Write-Log `
+            "Network: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 10. GAME PRIORITY
+# 10 MMCSS
 # ============================================================
 
 function Optimize-MMCSS {
 
-    $path =
-        "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+    try {
 
-    $ok = $true
+        $Path =
+            "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
 
-    if (-not (Set-RegDWORD `
-        $path `
-        "GPU Priority" `
-        8)) {
+        if (-not (Test-Path $Path)) {
 
-        $ok = $false
+            New-Item `
+                -Path $Path `
+                -Force |
+                Out-Null
+        }
+
+        Set-RegString `
+            $Path `
+            "GPU Priority" `
+            "8"
+
+        Set-RegString `
+            $Path `
+            "Priority" `
+            "6"
+
+        Set-RegString `
+            $Path `
+            "Scheduling Category" `
+            "High"
+
+        Set-RegString `
+            $Path `
+            "SFIO Priority" `
+            "High"
+
+        Write-Log `
+            "MMCSS Games profile configured." `
+            "OK"
     }
+    catch {
 
-    if (-not (Set-RegDWORD `
-        $path `
-        "Priority" `
-        6)) {
-
-        $ok = $false
+        Write-Log `
+            "MMCSS: $($_.Exception.Message)" `
+            "ERROR"
     }
-
-    Set-RegString `
-        $path `
-        "Scheduling Category" `
-        "High" | Out-Null
-
-    Set-RegString `
-        $path `
-        "SFIO Priority" `
-        "High" | Out-Null
-
-    return $ok
 }
 
 # ============================================================
-# 11. TEMP CLEAN
+# 11 TEMP
 # ============================================================
 
 function Clean-Temp {
 
     try {
 
-        Get-ChildItem `
-            -LiteralPath $env:TEMP `
-            -Force `
-            -ErrorAction SilentlyContinue |
-            Remove-Item `
-                -Recurse `
-                -Force `
-                -ErrorAction SilentlyContinue
+        $TempPaths = @(
+            $env:TEMP,
+            "$env:WINDIR\Temp"
+        )
 
-        Get-ChildItem `
-            -LiteralPath "$env:WINDIR\Temp" `
-            -Force `
-            -ErrorAction SilentlyContinue |
-            Remove-Item `
-                -Recurse `
-                -Force `
-                -ErrorAction SilentlyContinue
+        foreach ($Path in $TempPaths) {
 
-        Clear-DnsClientCache `
-            -ErrorAction SilentlyContinue
-
-        return $true
-    }
-    catch {
-
-        return $false
-    }
-}
-
-# ============================================================
-# 12. SHADER CACHE
-# ============================================================
-
-function Clean-Shaders {
-
-    $paths = @(
-        "$env:LOCALAPPDATA\D3DSCache",
-        "$env:LOCALAPPDATA\NVIDIA\DXCache",
-        "$env:LOCALAPPDATA\NVIDIA\GLCache",
-        "$env:LOCALAPPDATA\AMD\DxCache"
-    )
-
-    foreach ($path in $paths) {
-
-        if (Test-Path $path) {
+            if (-not (Test-Path $Path)) {
+                continue
+            }
 
             try {
 
                 Get-ChildItem `
-                    -Path $path `
+                    -Path $Path `
                     -Force `
                     -ErrorAction SilentlyContinue |
                     Remove-Item `
@@ -962,501 +924,1622 @@ function Clean-Shaders {
                         -Force `
                         -ErrorAction SilentlyContinue
             }
-            catch {
-            }
+            catch {}
         }
-    }
 
-    return $true
+        Write-Log `
+            "Temporary files cleaned." `
+            "OK"
+    }
+    catch {
+
+        Write-Log `
+            "Temp: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 13. EXPLORER
+# 12 SHADER
+# ============================================================
+
+function Clean-Shaders {
+
+    try {
+
+        $ShaderPaths = @(
+            "$env:LOCALAPPDATA\D3DSCache",
+            "$env:LOCALAPPDATA\NVIDIA\DXCache",
+            "$env:LOCALAPPDATA\NVIDIA\GLCache",
+            "$env:LOCALAPPDATA\AMD\DxCache"
+        )
+
+        foreach ($Path in $ShaderPaths) {
+
+            if (-not (Test-Path $Path)) {
+                continue
+            }
+
+            try {
+
+                Get-ChildItem `
+                    -Path $Path `
+                    -Force `
+                    -ErrorAction SilentlyContinue |
+                    Remove-Item `
+                        -Recurse `
+                        -Force `
+                        -ErrorAction SilentlyContinue
+            }
+            catch {}
+        }
+
+        Write-Log `
+            "Shader caches cleaned." `
+            "OK"
+
+        Write-Log `
+            "Shaders may rebuild after launch." `
+            "WARN"
+    }
+    catch {
+
+        Write-Log `
+            "Shader Cache: $($_.Exception.Message)" `
+            "ERROR"
+    }
+}
+
+# ============================================================
+# 13 EXPLORER
 # ============================================================
 
 function Optimize-Explorer {
 
-    $path =
-        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+    try {
 
-    Set-RegDWORD `
-        $path `
-        "TaskbarAnimations" `
-        0 | Out-Null
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" `
+            "ShowSyncProviderNotifications" `
+            0
 
-    Set-RegDWORD `
-        $path `
-        "ListviewAlphaSelect" `
-        0 | Out-Null
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" `
+            "TaskbarDa" `
+            0
 
-    Set-RegDWORD `
-        $path `
-        "ListviewShadow" `
-        0 | Out-Null
+        Write-Log `
+            "Explorer background overhead reduced." `
+            "OK"
+    }
+    catch {
 
-    return $true
+        Write-Log `
+            "Explorer: $($_.Exception.Message)" `
+            "ERROR"
+    }
 }
 
 # ============================================================
-# 14. BACKGROUND TASKS
+# 14 TASKS
 # ============================================================
 
 function Optimize-Tasks {
 
-    $tasks = @(
-        @(
-            "\Microsoft\Windows\Customer Experience Improvement Program",
-            "Consolidator"
-        ),
-        @(
-            "\Microsoft\Windows\Customer Experience Improvement Program",
-            "UsbCeip"
-        ),
-        @(
-            "\Microsoft\Windows\Feedback\Siuf",
-            "DmClient"
-        ),
-        @(
-            "\Microsoft\Windows\Feedback\Siuf",
-            "DmClientOnScenarioDownload"
-        )
-    )
-
-    foreach ($task in $tasks) {
-
-        try {
-
-            Disable-ScheduledTask `
-                -TaskPath $task[0] `
-                -TaskName $task[1] `
-                -ErrorAction SilentlyContinue |
-                Out-Null
-        }
-        catch {
-        }
-    }
-
-    return $true
-}
-
-# ============================================================
-# 15. CPU PROCESS CLEANUP
-# ============================================================
-
-function Optimize-CPUProcesses {
-
-    # --------------------------------------------------------
-    # IMPORTANT
-    #
-    # These are user applications / optional background apps.
-    # Core Windows processes are intentionally NOT touched.
-    # --------------------------------------------------------
-
-    $targets = @(
-        "OneDrive",
-        "Teams",
-        "ms-teams",
-        "MicrosoftTeams",
-        "Widgets",
-        "WidgetService",
-        "PhoneExperienceHost",
-        "YourPhone",
-        "GameBar",
-        "XboxPcApp",
-        "XboxApp",
-        "Spotify",
-        "Discord",
-        "AdobeCollabSync",
-        "AdobeIPCBroker",
-        "steamwebhelper"
-    )
-
-    $stopped = 0
-
-    foreach ($name in $targets) {
-
-        try {
-
-            $processes =
-                Get-Process `
-                    -Name $name `
-                    -ErrorAction SilentlyContinue
-
-            foreach ($process in $processes) {
-
-                # Never stop this script itself.
-                if ($process.Id -eq $PID) {
-                    continue
-                }
-
-                try {
-
-                    Stop-Process `
-                        -Id $process.Id `
-                        -Force `
-                        -ErrorAction SilentlyContinue
-
-                    $stopped++
-                }
-                catch {
-                }
-            }
-        }
-        catch {
-        }
-    }
-
-    Append-Log "[CPU] Closed $stopped optional background processes"
-
-    return $true
-}
-
-# ============================================================
-# 16. MEMORY WORKING SET
-# ============================================================
-
-function Optimize-Memory {
-
     try {
 
-        $targets = @(
-            "OneDrive",
-            "Teams",
-            "ms-teams",
-            "MicrosoftTeams",
-            "Widgets",
-            "PhoneExperienceHost",
-            "YourPhone",
-            "Spotify",
-            "Discord"
+        $Tasks = @(
+            "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser",
+            "\Microsoft\Windows\Application Experience\ProgramDataUpdater",
+            "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator",
+            "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip",
+            "\Microsoft\Windows\Feedback\Siuf\DmClient",
+            "\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload"
         )
 
-        foreach ($name in $targets) {
+        foreach ($Task in $Tasks) {
 
-            $processes =
-                Get-Process `
-                    -Name $name `
-                    -ErrorAction SilentlyContinue
+            try {
 
-            foreach ($process in $processes) {
+                schtasks.exe `
+                    /Change `
+                    /TN "$Task" `
+                    /Disable 2>&1 |
+                    Out-Null
 
-                try {
+                if ($LASTEXITCODE -eq 0) {
 
-                    $process.Refresh()
-
-                    # Trim only non-critical user applications.
-                    Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-
-public static class WorkingSetCleaner
-{
-    [DllImport("psapi.dll")]
-    public static extern bool EmptyWorkingSet(IntPtr hProcess);
-}
-"@ -ErrorAction SilentlyContinue
-
-                    [WorkingSetCleaner]::EmptyWorkingSet(
-                        $process.Handle
-                    ) | Out-Null
-                }
-                catch {
+                    Write-Log `
+                        "Task disabled: $Task" `
+                        "OK"
                 }
             }
+            catch {}
         }
 
-        return $true
+        Write-Log `
+            "Optional scheduled tasks reduced." `
+            "OK"
     }
     catch {
 
-        return $false
+        Write-Log `
+            "Tasks: $($_.Exception.Message)" `
+            "ERROR"
     }
 }
 
 # ============================================================
-# MAX OPTIMIZATION
+# 15 SYSTEM.INI
 # ============================================================
 
-$btnOptimize.Add_Click({
+function Optimize-SystemINI {
 
-    $btnOptimize.Enabled = $false
+    $SystemIni =
+        Join-Path $env:WINDIR "system.ini"
 
-    $progress.Value = 0
+    try {
 
-    $lblStatus.Text =
-        "MAX PERFORMANCE OPTIMIZATION..."
+        if (-not (Test-Path $SystemIni)) {
 
-    $lblStatus.ForeColor = $PURPLE
+            Write-Log `
+                "system.ini not found." `
+                "WARN"
 
-    Append-Log ""
-    Append-Log "============================================================"
-    Append-Log "SIXONE MAX PERFORMANCE ENGINE"
-    Append-Log "============================================================"
-    Append-Log "Starting maximum safe gaming optimization..."
-    Append-Log ""
+            return
+        }
 
-    # ========================================================
-    # 1
-    # ========================================================
+        # ----------------------------------------------------
+        # BACKUP
+        # ----------------------------------------------------
 
-    Append-Log "[01/16] Enabling Game Mode..."
+        $Backup =
+            "$SystemIni.sixone.backup"
 
-    if (Optimize-GameMode) {
+        if (-not (Test-Path $Backup)) {
 
-        Set-Status "GameMode" $true
-        Append-Log "[OK] Game Mode enabled"
+            Copy-Item `
+                -Path $SystemIni `
+                -Destination $Backup `
+                -Force `
+                -ErrorAction Stop
+
+            Write-Log `
+                "system.ini backup created." `
+                "OK"
+        }
+
+        # ----------------------------------------------------
+        # READ
+        # ----------------------------------------------------
+
+        $Content = Get-Content `
+            -Path $SystemIni `
+            -Raw `
+            -ErrorAction Stop
+
+        if ($null -eq $Content) {
+            $Content = ""
+        }
+
+        # ----------------------------------------------------
+        # REMOVE OLD SIXONE BLOCK
+        # ----------------------------------------------------
+
+        $Pattern =
+            '(?ms)^\s*;\s*===== SIXONE SETTINGV1 START =====.*?^\s*;\s*===== SIXONE SETTINGV1 END =====\s*\r?\n?'
+
+        $Content =
+            [regex]::Replace(
+                $Content,
+                $Pattern,
+                ""
+            )
+
+        # ----------------------------------------------------
+        # SAFE BLOCK
+        # ----------------------------------------------------
+
+        $SixOneBlock = @"
+
+; ===== SIXONE SETTINGV1 START =====
+; SIXONE SETTINGV1
+; Modern Windows system.ini compatibility marker
+; No unsupported legacy performance values forced.
+; ===== SIXONE SETTINGV1 END =====
+
+"@
+
+        $NewContent =
+            $Content.TrimEnd() +
+            $SixOneBlock
+
+        # ----------------------------------------------------
+        # TEMP WRITE
+        # ----------------------------------------------------
+
+        $TempFile =
+            "$SystemIni.sixone.tmp"
+
+        [System.IO.File]::WriteAllText(
+            $TempFile,
+            $NewContent,
+            [System.Text.UTF8Encoding]::new($false)
+        )
+
+        Copy-Item `
+            -Path $TempFile `
+            -Destination $SystemIni `
+            -Force `
+            -ErrorAction Stop
+
+        Remove-Item `
+            -Path $TempFile `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+        Write-Log `
+            "system.ini updated safely." `
+            "OK"
+
+        Write-Log `
+            "Backup: $Backup" `
+            "OK"
+    }
+    catch {
+
+        Write-Log `
+            "system.ini: $($_.Exception.Message)" `
+            "ERROR"
+
+        try {
+
+            Remove-Item `
+                -Path "$SystemIni.sixone.tmp" `
+                -Force `
+                -ErrorAction SilentlyContinue
+        }
+        catch {}
+    }
+}
+
+# ============================================================
+# 16 PERMANENT PROCESS LOAD
+# ============================================================
+
+function Optimize-PermanentProcessLoad {
+
+    try {
+
+        $Paths = @(
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run",
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+        )
+
+        $Targets = @(
+            "OneDrive",
+            "Teams",
+            "com.squirrel.Teams.Teams",
+            "Microsoft Teams",
+            "Spotify"
+        )
+
+        foreach ($Path in $Paths) {
+
+            if (-not (Test-Path $Path)) {
+                continue
+            }
+
+            foreach ($Target in $Targets) {
+
+                try {
+
+                    $Exists =
+                        Get-ItemProperty `
+                            -Path $Path `
+                            -Name $Target `
+                            -ErrorAction SilentlyContinue
+
+                    if ($null -ne $Exists) {
+
+                        Remove-ItemProperty `
+                            -Path $Path `
+                            -Name $Target `
+                            -Force `
+                            -ErrorAction SilentlyContinue
+
+                        Write-Log `
+                            "Startup load removed: $Target" `
+                            "OK"
+                    }
+                }
+                catch {}
+            }
+        }
+
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" `
+            "TaskbarDa" `
+            0
+
+        Set-RegDWORD `
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings" `
+            "IsDynamicSearchBoxEnabled" `
+            0
+
+        Set-RegDWORD `
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent" `
+            "DisableWindowsConsumerFeatures" `
+            1
+
+        Write-Log `
+            "Permanent process-load configuration applied." `
+            "OK"
+
+        Write-Log `
+            "Realtime process killer: DISABLED." `
+            "OK"
+
+        Write-Log `
+            "Process watcher: DISABLED." `
+            "OK"
+    }
+    catch {
+
+        Write-Log `
+            "Permanent Load: $($_.Exception.Message)" `
+            "ERROR"
+    }
+}
+
+# ============================================================
+# MASTER
+# ============================================================
+
+function Start-PermanentOptimization {
+
+    if ($script:OptimizationRunning) {
+        return
     }
 
-    $progress.Value = 6
+    $script:OptimizationRunning = $true
+    $script:CompletedCount = 0
+
+    # --------------------------------------------------------
+    # BEFORE
+    # --------------------------------------------------------
+
+    $script:StartProcessCount =
+        Get-ProcessCountSafe
+
+    $StartMemory =
+        Get-MemoryInfo
+
+    $script:StartMemoryMB =
+        $StartMemory.Used
+
+    # --------------------------------------------------------
+    # BUTTON
+    # --------------------------------------------------------
+
+    $script:RunButton.Enabled = $false
+    $script:RunButton.Text = "OPTIMIZING..."
+    $script:RunButton.BackColor = $PURPLE_DARK
+
+    $script:ProgressBar.Value = 0
+    $script:ProgressText.Text = "0%"
+
+    $script:StatusMain.Text = "OPTIMIZING"
+    $script:StatusMain.ForeColor = $PURPLE_LIGHT
+
+    Write-Log ""
+    Write-Log "============================================"
+    Write-Log "SIXONE PERMANENT MAX STARTED"
+    Write-Log "============================================"
+
+    Write-Log `
+        "Processes Before: $($script:StartProcessCount)"
+
+    Write-Log `
+        "RAM Before: $($script:StartMemoryMB) MB"
 
     # ========================================================
-    # 2
+    # STEP 01
     # ========================================================
 
-    Append-Log "[02/16] Configuring Hardware GPU Scheduling..."
+    Set-Status 0 "Game Mode" "RUN"
 
-    if (Optimize-GPU) {
+    Optimize-GameMode
 
-        Set-Status "GPU" $true
-        Append-Log "[OK] GPU scheduling configured"
+    Set-Status 0 "Game Mode" "OK"
+
+    Update-Progress "Game Mode"
+
+    # ========================================================
+    # STEP 02
+    # ========================================================
+
+    Set-Status 1 "GPU / HAGS" "RUN"
+
+    Optimize-GPU
+
+    Set-Status 1 "GPU / HAGS" "OK"
+
+    Update-Progress "GPU"
+
+    # ========================================================
+    # STEP 03
+    # ========================================================
+
+    Set-Status 2 "Power Plan" "RUN"
+
+    Optimize-Power
+
+    Set-Status 2 "Power Plan" "OK"
+
+    Update-Progress "Power Plan"
+
+    # ========================================================
+    # STEP 04
+    # ========================================================
+
+    Set-Status 3 "Visual Effects" "RUN"
+
+    Optimize-VisualEffects
+
+    Set-Status 3 "Visual Effects" "OK"
+
+    Update-Progress "Visual Effects"
+
+    # ========================================================
+    # STEP 05
+    # ========================================================
+
+    Set-Status 4 "Background Apps" "RUN"
+
+    Optimize-BackgroundApps
+
+    Set-Status 4 "Background Apps" "OK"
+
+    Update-Progress "Background Apps"
+
+    # ========================================================
+    # STEP 06
+    # ========================================================
+
+    Set-Status 5 "Game Capture" "RUN"
+
+    Optimize-Capture
+
+    Set-Status 5 "Game Capture" "OK"
+
+    Update-Progress "Game Capture"
+
+    # ========================================================
+    # STEP 07
+    # ========================================================
+
+    Set-Status 6 "Startup" "RUN"
+
+    Optimize-Startup
+
+    Set-Status 6 "Startup" "OK"
+
+    Update-Progress "Startup"
+
+    # ========================================================
+    # STEP 08
+    # ========================================================
+
+    Set-Status 7 "Input / Queue" "RUN"
+
+    Optimize-Input
+
+    Set-Status 7 "Input / Queue" "OK"
+
+    Update-Progress "Input"
+
+    # ========================================================
+    # STEP 09
+    # ========================================================
+
+    Set-Status 8 "Network" "RUN"
+
+    Optimize-Network
+
+    Set-Status 8 "Network" "OK"
+
+    Update-Progress "Network"
+
+    # ========================================================
+    # STEP 10
+    # ========================================================
+
+    Set-Status 9 "MMCSS" "RUN"
+
+    Optimize-MMCSS
+
+    Set-Status 9 "MMCSS" "OK"
+
+    Update-Progress "MMCSS"
+
+    # ========================================================
+    # STEP 11
+    # ========================================================
+
+    Set-Status 10 "Temp Cleanup" "RUN"
+
+    Clean-Temp
+
+    Set-Status 10 "Temp Cleanup" "OK"
+
+    Update-Progress "Temp Cleanup"
+
+    # ========================================================
+    # STEP 12
+    # ========================================================
+
+    Set-Status 11 "Shader Cache" "RUN"
+
+    Clean-Shaders
+
+    Set-Status 11 "Shader Cache" "OK"
+
+    Update-Progress "Shader Cache"
+
+    # ========================================================
+    # STEP 13
+    # ========================================================
+
+    Set-Status 12 "Explorer" "RUN"
+
+    Optimize-Explorer
+
+    Set-Status 12 "Explorer" "OK"
+
+    Update-Progress "Explorer"
+
+    # ========================================================
+    # STEP 14
+    # ========================================================
+
+    Set-Status 13 "Scheduled Tasks" "RUN"
+
+    Optimize-Tasks
+
+    Set-Status 13 "Scheduled Tasks" "OK"
+
+    Update-Progress "Scheduled Tasks"
+
+    # ========================================================
+    # STEP 15
+    # ========================================================
+
+    Set-Status 14 "system.ini" "RUN"
+
+    Optimize-SystemINI
+
+    Set-Status 14 "system.ini" "OK"
+
+    Update-Progress "system.ini"
+
+    # ========================================================
+    # STEP 16
+    # ========================================================
+
+    Set-Status 15 "Permanent Process Load" "RUN"
+
+    Optimize-PermanentProcessLoad
+
+    Set-Status 15 "Permanent Process Load" "OK"
+
+    Update-Progress "Permanent Process Load"
+
+    # ========================================================
+    # FINAL
+    # ========================================================
+
+    Start-Sleep -Milliseconds 500
+
+    $script:EndProcessCount =
+        Get-ProcessCountSafe
+
+    $EndMemory =
+        Get-MemoryInfo
+
+    $script:EndMemoryMB =
+        $EndMemory.Used
+
+    # --------------------------------------------------------
+    # DIFFERENCE
+    # --------------------------------------------------------
+
+    $ProcessDifference =
+        $script:StartProcessCount -
+        $script:EndProcessCount
+
+    $MemoryDifference =
+        $script:StartMemoryMB -
+        $script:EndMemoryMB
+
+    # --------------------------------------------------------
+    # PROCESS UI
+    # --------------------------------------------------------
+
+    $script:BeforeProcessLabel.Text =
+        "$($script:StartProcessCount)"
+
+    $script:AfterProcessLabel.Text =
+        "$($script:EndProcessCount)"
+
+    if ($ProcessDifference -gt 0) {
+
+        $script:ProcessDeltaLabel.Text =
+            "-$ProcessDifference processes"
+    }
+    elseif ($ProcessDifference -lt 0) {
+
+        $script:ProcessDeltaLabel.Text =
+            "+$([math]::Abs($ProcessDifference)) processes"
+    }
+    else {
+
+        $script:ProcessDeltaLabel.Text =
+            "No change"
     }
 
-    $progress.Value = 12
+    # --------------------------------------------------------
+    # MEMORY UI
+    # --------------------------------------------------------
 
-    # ========================================================
-    # 3
-    # ========================================================
+    $script:BeforeMemoryLabel.Text =
+        "$($script:StartMemoryMB) MB"
 
-    Append-Log "[03/16] Activating High Performance power profile..."
+    $script:AfterMemoryLabel.Text =
+        "$($script:EndMemoryMB) MB"
 
-    if (Optimize-Power) {
+    if ($MemoryDifference -gt 0) {
 
-        Set-Status "Power" $true
-        Append-Log "[OK] Performance power profile"
+        $script:MemoryDeltaLabel.Text =
+            "-$MemoryDifference MB"
+    }
+    elseif ($MemoryDifference -lt 0) {
+
+        $script:MemoryDeltaLabel.Text =
+            "+$([math]::Abs($MemoryDifference)) MB"
+    }
+    else {
+
+        $script:MemoryDeltaLabel.Text =
+            "No change"
     }
 
-    $progress.Value = 18
-
-    # ========================================================
-    # 4
-    # ========================================================
-
-    Append-Log "[04/16] Reducing Windows visual overhead..."
-
-    if (Optimize-VisualEffects) {
-
-        Set-Status "Visual" $true
-        Append-Log "[OK] Visual effects reduced"
-    }
-
-    $progress.Value = 24
-
-    # ========================================================
-    # 5
-    # ========================================================
-
-    Append-Log "[05/16] Disabling unnecessary background app activity..."
-
-    if (Optimize-BackgroundApps) {
-
-        Set-Status "Background" $true
-        Append-Log "[OK] Background apps reduced"
-    }
-
-    $progress.Value = 30
-
-    # ========================================================
-    # 6
-    # ========================================================
-
-    Append-Log "[06/16] Disabling Game DVR / background capture..."
-
-    if (Optimize-Capture) {
-
-        Set-Status "Capture" $true
-        Append-Log "[OK] Game DVR disabled"
-    }
-
-    $progress.Value = 36
-
-    # ========================================================
-    # 7
-    # ========================================================
-
-    Append-Log "[07/16] Reducing startup applications..."
-
-    if (Optimize-Startup) {
-
-        Set-Status "Startup" $true
-        Append-Log "[OK] Startup reduced"
-    }
-
-    $progress.Value = 42
-
-    # ========================================================
-    # 8
-    # ========================================================
-
-    Append-Log "[08/16] Optimizing mouse and keyboard response..."
-
-    if (Optimize-Input) {
-
-        Set-Status "Input" $true
-        Append-Log "[OK] Input optimized"
-    }
-
-    $progress.Value = 48
-
-    # ========================================================
-    # 9
-    # ========================================================
-
-    Append-Log "[09/16] Optimizing network stack..."
-
-    if (Optimize-Network) {
-
-        Set-Status "Network" $true
-        Append-Log "[OK] Network optimized"
-    }
-
-    $progress.Value = 54
-
-    # ========================================================
-    # 10
-    # ========================================================
-
-    Append-Log "[10/16] Configuring game process priority..."
-
-    if (Optimize-MMCSS) {
-
-        Set-Status "MMCSS" $true
-        Append-Log "[OK] Game priority configured"
-    }
-
-    $progress.Value = 60
-
-    # ========================================================
-    # 11
-    # ========================================================
-
-    Append-Log "[11/16] Cleaning temporary files..."
-
-    if (Clean-Temp) {
-
-        Set-Status "Temp" $true
-        Append-Log "[OK] Temporary files cleaned"
-    }
-
-    $progress.Value = 66
-
-    # ========================================================
-    # 12
-    # ========================================================
-
-    Append-Log "[12/16] Cleaning old graphics shader cache..."
-
-    if (Clean-Shaders) {
-
-        Set-Status "Shader" $true
-        Append-Log "[OK] Shader cache cleaned"
-    }
-
-    $progress.Value = 72
-
-    # ========================================================
-    # 13
-    # ========================================================
-
-    Append-Log "[13/16] Reducing Explorer overhead..."
-
-    if (Optimize-Explorer) {
-
-        Set-Status "Explorer" $true
-        Append-Log "[OK] Explorer effects reduced"
-    }
-
-    $progress.Value = 78
-
-    # ========================================================
-    # 14
-    # ========================================================
-
-    Append-Log "[14/16] Reducing consumer background tasks..."
-
-    if (Optimize-Tasks) {
-
-        Set-Status "Tasks" $true
-        Append-Log "[OK] Background tasks reduced"
-    }
-
-    $progress.Value = 84
-
-    # ========================================================
-    # 15
-    # ========================================================
-
-    Append-Log "[15/16] Closing optional CPU background processes..."
-
-    if (Optimize-CPUProcesses) {
-
-        Set-Status "CPU" $true
-        Append-Log "[OK] Optional CPU processes cleaned"
-    }
-
-    $progress.Value = 92
-
-    # ========================================================
-    # 16
-    # ========================================================
-
-    Append-Log "[16/16] Cleaning unused working memory..."
-
-    if (Optimize-Memory) {
-
-        Set-Status "Memory" $true
-        Append-Log "[OK] User application working sets cleaned"
-    }
-
-    $progress.Value = 100
-
-    # ========================================================
+    # --------------------------------------------------------
     # COMPLETE
-    # ========================================================
+    # --------------------------------------------------------
 
-    $lblStatus.Text =
-        "✓ MAX PERFORMANCE ACTIVE"
+    $script:ProgressBar.Value = 100
+    $script:ProgressText.Text = "100%"
 
-    $lblStatus.ForeColor = $GREEN
+    $script:StatusMain.Text =
+        "COMPLETED"
 
-    Append-Log ""
-    Append-Log "============================================================"
-    Append-Log "MAX PERFORMANCE OPTIMIZATION COMPLETED"
-    Append-Log "============================================================"
-    Append-Log "CPU background workload reduced."
-    Append-Log "Non-essential user applications cleaned."
-    Append-Log "Gaming profile configured."
-    Append-Log "Restart Windows for changes requiring reboot."
-    Append-Log "============================================================"
+    $script:StatusMain.ForeColor =
+        $GREEN
 
-    $btnOptimize.Enabled = $true
+    $script:RunButton.Enabled = $true
+    $script:RunButton.Text =
+        "RUN PERMANENT MAX"
+
+    $script:RunButton.BackColor =
+        $PURPLE
+
+    $script:OptimizationRunning =
+        $false
+
+    Write-Log ""
+    Write-Log "============================================"
+    Write-Log "OPTIMIZATION COMPLETED"
+    Write-Log "============================================"
+
+    Write-Log `
+        "Processes Before : $($script:StartProcessCount)"
+
+    Write-Log `
+        "Processes After  : $($script:EndProcessCount)"
+
+    Write-Log `
+        "RAM Before       : $($script:StartMemoryMB) MB"
+
+    Write-Log `
+        "RAM After        : $($script:EndMemoryMB) MB"
+
+    Write-Log `
+        "Permanent configuration completed." `
+        "OK"
+
+    Write-Log `
+        "No realtime process watcher installed." `
+        "OK"
+
+    Write-Log `
+        "Restart Windows to apply driver/system changes." `
+        "WARN"
+}
+
+# ============================================================
+# FORM
+# ============================================================
+
+$form = New-Object System.Windows.Forms.Form
+
+$form.Text =
+    "SIXONE SETTINGV1"
+
+# IMPORTANT:
+# Use ClientSize instead of Size
+# to prevent controls from going outside the screen.
+
+$form.ClientSize =
+    New-Object System.Drawing.Size(1080,700)
+
+$form.MinimumSize =
+    New-Object System.Drawing.Size(1080,700)
+
+$form.MaximumSize =
+    New-Object System.Drawing.Size(1080,700)
+
+$form.StartPosition =
+    "CenterScreen"
+
+$form.BackColor =
+    $BG_MAIN
+
+$form.ForeColor =
+    $TEXT
+
+$form.FormBorderStyle =
+    "FixedSingle"
+
+$form.MaximizeBox =
+    $false
+
+$form.MinimizeBox =
+    $true
+
+# ============================================================
+# HEADER
+# ============================================================
+
+$Header = New-Object System.Windows.Forms.Panel
+
+$Header.Location =
+    New-Object System.Drawing.Point(15,12)
+
+$Header.Size =
+    New-Object System.Drawing.Size(1050,65)
+
+$Header.BackColor =
+    $BG_CARD
+
+$form.Controls.Add($Header)
+
+# Accent
+
+$Accent = New-Object System.Windows.Forms.Panel
+
+$Accent.Location =
+    New-Object System.Drawing.Point(0,0)
+
+$Accent.Size =
+    New-Object System.Drawing.Size(5,65)
+
+$Accent.BackColor =
+    $PURPLE
+
+$Header.Controls.Add($Accent)
+
+# Title
+
+$Title = New-Object System.Windows.Forms.Label
+
+$Title.Text =
+    "SIXONE"
+
+$Title.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        21,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$Title.ForeColor =
+    $WHITE
+
+$Title.Location =
+    New-Object System.Drawing.Point(22,7)
+
+$Title.AutoSize =
+    $true
+
+$Header.Controls.Add($Title)
+
+# Subtitle
+
+$SubTitle = New-Object System.Windows.Forms.Label
+
+$SubTitle.Text =
+    "SETTINGV1  •  PERMANENT GAMING OPTIMIZER"
+
+$SubTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        8
+    )
+
+$SubTitle.ForeColor =
+    $MUTED
+
+$SubTitle.Location =
+    New-Object System.Drawing.Point(25,40)
+
+$SubTitle.AutoSize =
+    $true
+
+$Header.Controls.Add($SubTitle)
+
+# Main Status
+
+$script:StatusMain =
+    New-Object System.Windows.Forms.Label
+
+$script:StatusMain.Text =
+    "READY"
+
+$script:StatusMain.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        9,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:StatusMain.ForeColor =
+    $PURPLE_LIGHT
+
+$script:StatusMain.Location =
+    New-Object System.Drawing.Point(970,27)
+
+$script:StatusMain.AutoSize =
+    $true
+
+$Header.Controls.Add($script:StatusMain)
+
+# ============================================================
+# STATUS CARD
+# ============================================================
+
+$StatusCard =
+    New-Object System.Windows.Forms.Panel
+
+$StatusCard.Location =
+    New-Object System.Drawing.Point(15,90)
+
+$StatusCard.Size =
+    New-Object System.Drawing.Size(370,420)
+
+$StatusCard.BackColor =
+    $BG_CARD
+
+$form.Controls.Add($StatusCard)
+
+$StatusTitle =
+    New-Object System.Windows.Forms.Label
+
+$StatusTitle.Text =
+    "SYSTEM STATUS"
+
+$StatusTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        10,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$StatusTitle.ForeColor =
+    $WHITE
+
+$StatusTitle.Location =
+    New-Object System.Drawing.Point(18,15)
+
+$StatusTitle.AutoSize =
+    $true
+
+$StatusCard.Controls.Add($StatusTitle)
+
+$StatusLine =
+    New-Object System.Windows.Forms.Panel
+
+$StatusLine.Location =
+    New-Object System.Drawing.Point(18,42)
+
+$StatusLine.Size =
+    New-Object System.Drawing.Size(334,1)
+
+$StatusLine.BackColor =
+    $BORDER
+
+$StatusCard.Controls.Add($StatusLine)
+
+# ============================================================
+# STATUS ITEMS
+# ============================================================
+
+$StatusNames = @(
+    "Game Mode",
+    "GPU / HAGS",
+    "Power Plan",
+    "Visual Effects",
+    "Background Apps",
+    "Game Capture",
+    "Startup",
+    "Input / Queue",
+    "Network",
+    "MMCSS",
+    "Temp Cleanup",
+    "Shader Cache",
+    "Explorer",
+    "Scheduled Tasks",
+    "system.ini",
+    "Permanent Process Load"
+)
+
+$script:StatusLabels = @()
+
+$Y = 55
+
+foreach ($Name in $StatusNames) {
+
+    $Label =
+        New-Object System.Windows.Forms.Label
+
+    $Label.Text =
+        "○  $Name"
+
+    $Label.Font =
+        New-Object System.Drawing.Font(
+            "Segoe UI",
+            8.5
+        )
+
+    $Label.ForeColor =
+        $MUTED
+
+    $Label.Location =
+        New-Object System.Drawing.Point(20,$Y)
+
+    $Label.Size =
+        New-Object System.Drawing.Size(320,20)
+
+    $StatusCard.Controls.Add($Label)
+
+    $script:StatusLabels += $Label
+
+    $Y += 21
+}
+
+# ============================================================
+# LOG CARD
+# ============================================================
+
+$LogCard =
+    New-Object System.Windows.Forms.Panel
+
+$LogCard.Location =
+    New-Object System.Drawing.Point(400,90)
+
+$LogCard.Size =
+    New-Object System.Drawing.Size(665,420)
+
+$LogCard.BackColor =
+    $BG_CARD
+
+$form.Controls.Add($LogCard)
+
+$LogTitle =
+    New-Object System.Windows.Forms.Label
+
+$LogTitle.Text =
+    "EXECUTION LOGS"
+
+$LogTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        10,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$LogTitle.ForeColor =
+    $WHITE
+
+$LogTitle.Location =
+    New-Object System.Drawing.Point(18,15)
+
+$LogTitle.AutoSize =
+    $true
+
+$LogCard.Controls.Add($LogTitle)
+
+$LogLine =
+    New-Object System.Windows.Forms.Panel
+
+$LogLine.Location =
+    New-Object System.Drawing.Point(18,42)
+
+$LogLine.Size =
+    New-Object System.Drawing.Size(629,1)
+
+$LogLine.BackColor =
+    $BORDER
+
+$LogCard.Controls.Add($LogLine)
+
+# ============================================================
+# LOG BOX
+# ============================================================
+
+$script:LogBox =
+    New-Object System.Windows.Forms.RichTextBox
+
+$script:LogBox.Location =
+    New-Object System.Drawing.Point(18,55)
+
+$script:LogBox.Size =
+    New-Object System.Drawing.Size(629,350)
+
+$script:LogBox.BackColor =
+    $BG_CONSOLE
+
+$script:LogBox.ForeColor =
+    $TEXT
+
+$script:LogBox.BorderStyle =
+    "None"
+
+$script:LogBox.Font =
+    New-Object System.Drawing.Font(
+        "Consolas",
+        8.5
+    )
+
+$script:LogBox.ReadOnly =
+    $true
+
+$script:LogBox.ScrollBars =
+    "Vertical"
+
+$script:LogBox.DetectUrls =
+    $false
+
+$LogCard.Controls.Add($script:LogBox)
+
+# ============================================================
+# INFO CARD
+# ============================================================
+
+$InfoCard =
+    New-Object System.Windows.Forms.Panel
+
+$InfoCard.Location =
+    New-Object System.Drawing.Point(15,520)
+
+$InfoCard.Size =
+    New-Object System.Drawing.Size(1050,78)
+
+$InfoCard.BackColor =
+    $BG_CARD
+
+$form.Controls.Add($InfoCard)
+
+# ============================================================
+# BEFORE PROCESS
+# ============================================================
+
+$BeforeTitle =
+    New-Object System.Windows.Forms.Label
+
+$BeforeTitle.Text =
+    "BEFORE PROCESSES"
+
+$BeforeTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        7.5
+    )
+
+$BeforeTitle.ForeColor =
+    $MUTED
+
+$BeforeTitle.Location =
+    New-Object System.Drawing.Point(18,9)
+
+$BeforeTitle.AutoSize =
+    $true
+
+$InfoCard.Controls.Add($BeforeTitle)
+
+$script:BeforeProcessLabel =
+    New-Object System.Windows.Forms.Label
+
+$script:BeforeProcessLabel.Text =
+    "--"
+
+$script:BeforeProcessLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        15,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:BeforeProcessLabel.ForeColor =
+    $WHITE
+
+$script:BeforeProcessLabel.Location =
+    New-Object System.Drawing.Point(18,28)
+
+$script:BeforeProcessLabel.AutoSize =
+    $true
+
+$InfoCard.Controls.Add(
+    $script:BeforeProcessLabel
+)
+
+# ============================================================
+# AFTER PROCESS
+# ============================================================
+
+$AfterTitle =
+    New-Object System.Windows.Forms.Label
+
+$AfterTitle.Text =
+    "AFTER PROCESSES"
+
+$AfterTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        7.5
+    )
+
+$AfterTitle.ForeColor =
+    $MUTED
+
+$AfterTitle.Location =
+    New-Object System.Drawing.Point(165,9)
+
+$AfterTitle.AutoSize =
+    $true
+
+$InfoCard.Controls.Add($AfterTitle)
+
+$script:AfterProcessLabel =
+    New-Object System.Windows.Forms.Label
+
+$script:AfterProcessLabel.Text =
+    "--"
+
+$script:AfterProcessLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        15,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:AfterProcessLabel.ForeColor =
+    $GREEN
+
+$script:AfterProcessLabel.Location =
+    New-Object System.Drawing.Point(165,28)
+
+$script:AfterProcessLabel.AutoSize =
+    $true
+
+$InfoCard.Controls.Add(
+    $script:AfterProcessLabel
+)
+
+$script:ProcessDeltaLabel =
+    New-Object System.Windows.Forms.Label
+
+$script:ProcessDeltaLabel.Text =
+    "Waiting..."
+
+$script:ProcessDeltaLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        7.5
+    )
+
+$script:ProcessDeltaLabel.ForeColor =
+    $MUTED
+
+$script:ProcessDeltaLabel.Location =
+    New-Object System.Drawing.Point(165,53)
+
+$script:ProcessDeltaLabel.AutoSize =
+    $true
+
+$InfoCard.Controls.Add(
+    $script:ProcessDeltaLabel
+)
+
+# ============================================================
+# BEFORE RAM
+# ============================================================
+
+$RamBeforeTitle =
+    New-Object System.Windows.Forms.Label
+
+$RamBeforeTitle.Text =
+    "BEFORE RAM"
+
+$RamBeforeTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        7.5
+    )
+
+$RamBeforeTitle.ForeColor =
+    $MUTED
+
+$RamBeforeTitle.Location =
+    New-Object System.Drawing.Point(320,9)
+
+$RamBeforeTitle.AutoSize =
+    $true
+
+$InfoCard.Controls.Add($RamBeforeTitle)
+
+$script:BeforeMemoryLabel =
+    New-Object System.Windows.Forms.Label
+
+$script:BeforeMemoryLabel.Text =
+    "--"
+
+$script:BeforeMemoryLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        15,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:BeforeMemoryLabel.ForeColor =
+    $WHITE
+
+$script:BeforeMemoryLabel.Location =
+    New-Object System.Drawing.Point(320,28)
+
+$script:BeforeMemoryLabel.AutoSize =
+    $true
+
+$InfoCard.Controls.Add(
+    $script:BeforeMemoryLabel
+)
+
+# ============================================================
+# AFTER RAM
+# ============================================================
+
+$RamAfterTitle =
+    New-Object System.Windows.Forms.Label
+
+$RamAfterTitle.Text =
+    "AFTER RAM"
+
+$RamAfterTitle.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        7.5
+    )
+
+$RamAfterTitle.ForeColor =
+    $MUTED
+
+$RamAfterTitle.Location =
+    New-Object System.Drawing.Point(470,9)
+
+$RamAfterTitle.AutoSize =
+    $true
+
+$InfoCard.Controls.Add($RamAfterTitle)
+
+$script:AfterMemoryLabel =
+    New-Object System.Windows.Forms.Label
+
+$script:AfterMemoryLabel.Text =
+    "--"
+
+$script:AfterMemoryLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        15,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:AfterMemoryLabel.ForeColor =
+    $GREEN
+
+$script:AfterMemoryLabel.Location =
+    New-Object System.Drawing.Point(470,28)
+
+$script:AfterMemoryLabel.AutoSize =
+    $true
+
+$InfoCard.Controls.Add(
+    $script:AfterMemoryLabel
+)
+
+$script:MemoryDeltaLabel =
+    New-Object System.Windows.Forms.Label
+
+$script:MemoryDeltaLabel.Text =
+    "Waiting..."
+
+$script:MemoryDeltaLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI",
+        7.5
+    )
+
+$script:MemoryDeltaLabel.ForeColor =
+    $MUTED
+
+$script:MemoryDeltaLabel.Location =
+    New-Object System.Drawing.Point(470,53)
+
+$script:MemoryDeltaLabel.AutoSize =
+    $true
+
+$InfoCard.Controls.Add(
+    $script:MemoryDeltaLabel
+)
+
+# ============================================================
+# PROGRESS LABEL
+# ============================================================
+
+$ProgressLabel =
+    New-Object System.Windows.Forms.Label
+
+$ProgressLabel.Text =
+    "OPTIMIZATION PROGRESS"
+
+$ProgressLabel.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        7.5,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$ProgressLabel.ForeColor =
+    $MUTED
+
+$ProgressLabel.Location =
+    New-Object System.Drawing.Point(15,608)
+
+$ProgressLabel.AutoSize =
+    $true
+
+$form.Controls.Add($ProgressLabel)
+
+# ============================================================
+# PROGRESS TEXT
+# ============================================================
+
+$script:ProgressText =
+    New-Object System.Windows.Forms.Label
+
+$script:ProgressText.Text =
+    "0%"
+
+$script:ProgressText.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        7.5,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:ProgressText.ForeColor =
+    $PURPLE_LIGHT
+
+$script:ProgressText.Location =
+    New-Object System.Drawing.Point(350,608)
+
+$script:ProgressText.AutoSize =
+    $true
+
+$form.Controls.Add($script:ProgressText)
+
+# ============================================================
+# PROGRESS BAR
+# ============================================================
+
+$script:ProgressBar =
+    New-Object System.Windows.Forms.ProgressBar
+
+$script:ProgressBar.Location =
+    New-Object System.Drawing.Point(15,625)
+
+$script:ProgressBar.Size =
+    New-Object System.Drawing.Size(370,10)
+
+$script:ProgressBar.Minimum =
+    0
+
+$script:ProgressBar.Maximum =
+    100
+
+$script:ProgressBar.Value =
+    0
+
+$form.Controls.Add($script:ProgressBar)
+
+# ============================================================
+# RUN BUTTON
+# ============================================================
+
+$script:RunButton =
+    New-Object System.Windows.Forms.Button
+
+$script:RunButton.Text =
+    "RUN PERMANENT MAX"
+
+# FIXED:
+# Button is completely inside ClientSize 1080x700
+
+$script:RunButton.Location =
+    New-Object System.Drawing.Point(735,605)
+
+$script:RunButton.Size =
+    New-Object System.Drawing.Size(330,40)
+
+$script:RunButton.FlatStyle =
+    "Flat"
+
+$script:RunButton.FlatAppearance.BorderSize =
+    0
+
+$script:RunButton.BackColor =
+    $PURPLE
+
+$script:RunButton.ForeColor =
+    $WHITE
+
+$script:RunButton.Font =
+    New-Object System.Drawing.Font(
+        "Segoe UI Semibold",
+        9,
+        [System.Drawing.FontStyle]::Bold
+    )
+
+$script:RunButton.Cursor =
+    [System.Windows.Forms.Cursors]::Hand
+
+$form.Controls.Add(
+    $script:RunButton
+)
+
+# ============================================================
+# BUTTON HOVER
+# ============================================================
+
+$script:RunButton.Add_MouseEnter({
+
+    if ($script:RunButton.Enabled) {
+
+        $script:RunButton.BackColor =
+            $PURPLE_LIGHT
+    }
+})
+
+$script:RunButton.Add_MouseLeave({
+
+    if ($script:RunButton.Enabled) {
+
+        $script:RunButton.BackColor =
+            $PURPLE
+    }
 })
 
 # ============================================================
-# INITIAL MESSAGE
+# BUTTON CLICK
 # ============================================================
 
-$form.Add_Shown({
+$script:RunButton.Add_Click({
 
-    Append-Log "SIXONE MAX ENGINE INITIALIZED."
-    Append-Log "Administrator: ACTIVE"
-    Append-Log "Mode: MAX PERFORMANCE"
-    Append-Log ""
-    Append-Log "Ready to optimize CPU / RAM / GPU / Network."
+    if ($script:OptimizationRunning) {
+        return
+    }
+
+    try {
+
+        Start-PermanentOptimization
+    }
+    catch {
+
+        Write-Log `
+            "Fatal error: $($_.Exception.Message)" `
+            "ERROR"
+
+        $script:OptimizationRunning =
+            $false
+
+        $script:RunButton.Enabled =
+            $true
+
+        $script:RunButton.Text =
+            "RUN PERMANENT MAX"
+
+        $script:RunButton.BackColor =
+            $PURPLE
+
+        $script:StatusMain.Text =
+            "ERROR"
+
+        $script:StatusMain.ForeColor =
+            $RED
+    }
 })
 
 # ============================================================
-# SHOW
+# INITIAL STATS
+# ============================================================
+
+$InitialProcesses =
+    Get-ProcessCountSafe
+
+$InitialMemory =
+    Get-MemoryInfo
+
+$script:BeforeProcessLabel.Text =
+    "$InitialProcesses"
+
+$script:AfterProcessLabel.Text =
+    "$InitialProcesses"
+
+$script:BeforeMemoryLabel.Text =
+    "$($InitialMemory.Used) MB"
+
+$script:AfterMemoryLabel.Text =
+    "$($InitialMemory.Used) MB"
+
+# ============================================================
+# INITIAL LOG
+# ============================================================
+
+Write-Log `
+    "SIXONE SETTINGV1 initialized." `
+    "OK"
+
+Write-Log `
+    "Administrator mode confirmed." `
+    "OK"
+
+Write-Log `
+    "Permanent optimization mode enabled." `
+    "OK"
+
+Write-Log `
+    "Realtime process killer: DISABLED." `
+    "OK"
+
+Write-Log `
+    "Process watcher: DISABLED." `
+    "OK"
+
+Write-Log `
+    "Ready."
+
+# ============================================================
+# SHOW FORM
 # ============================================================
 
 [void]$form.ShowDialog()
-
